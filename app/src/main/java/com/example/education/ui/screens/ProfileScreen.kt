@@ -7,6 +7,8 @@ import androidx.compose.material.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,46 +31,25 @@ fun ProfileScreen(navController: NavController) {
     val currentUser = auth.currentUser
 
     if (currentUser == null) {
-        LoginRegisterScreen(auth)
+        LoginRegisterNavigation(auth, navController)
     } else {
-        UserProfileScreen(auth, currentUser)
+        UserProfileScreen(auth, currentUser, navController)
     }
 }
 
 @Composable
-fun UserProfileScreen(auth: FirebaseAuth, user: FirebaseUser) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.profile_placeholder),
-            contentDescription = "Profile Picture",
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Welcome, ${user.email}",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = { logout(auth) },
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red)
-        ) {
-            Text("Logout", color = Color.White)
-        }
+fun LoginRegisterNavigation(auth: FirebaseAuth, navController: NavController) {
+    var isLoginScreen by remember { mutableStateOf(true) }
+
+    if (isLoginScreen) {
+        LoginScreen(auth, onRegisterClick = { isLoginScreen = false }, navController)
+    } else {
+        RegisterScreen(auth, onLoginClick = { isLoginScreen = true })
     }
 }
 
 @Composable
-fun LoginRegisterScreen(auth: FirebaseAuth) {
+fun LoginScreen(auth: FirebaseAuth, onRegisterClick: () -> Unit, navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -101,7 +82,9 @@ fun LoginRegisterScreen(auth: FirebaseAuth) {
         Button(
             onClick = {
                 if (validateInput(email, password)) {
-                    login(auth, email, password, onError = { errorMessage = it })
+                    login(auth, email, password, onSuccess = {
+                        navController.navigate("home")
+                    }, onError = { errorMessage = it })
                 } else {
                     errorMessage = "Invalid email or password"
                 }
@@ -111,10 +94,49 @@ fun LoginRegisterScreen(auth: FirebaseAuth) {
             Text("Login")
         }
         Spacer(modifier = Modifier.height(8.dp))
+        TextButton(onClick = onRegisterClick) {
+            Text("Don't have an account? Register")
+        }
+    }
+}
+
+@Composable
+fun RegisterScreen(auth: FirebaseAuth, onLoginClick: () -> Unit) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        TextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        TextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Password") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        if (errorMessage.isNotEmpty()) {
+            Text(text = errorMessage, color = Color.Red)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = {
                 if (validateInput(email, password)) {
-                    register(auth, email, password, onError = { errorMessage = it })
+                    register(auth, email, password, onSuccess = {
+                        onLoginClick() // Switch to login screen after successful registration
+                    }, onError = { errorMessage = it })
                 } else {
                     errorMessage = "Invalid email or password"
                 }
@@ -122,6 +144,44 @@ fun LoginRegisterScreen(auth: FirebaseAuth) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Register")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        TextButton(onClick = onLoginClick) {
+            Text("Already have an account? Login")
+        }
+    }
+}
+
+@Composable
+fun UserProfileScreen(auth: FirebaseAuth, user: FirebaseUser, navController: NavController) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.profile_placeholder),
+            contentDescription = "Profile Picture",
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Welcome, ${user.email}",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = {
+                logout(auth, navController)
+            },
+            colors = ButtonDefaults.buttonColors(Color.Red)
+        ) {
+            Text("Logout", color = Color.White)
         }
     }
 }
@@ -131,18 +191,18 @@ fun validateInput(email: String, password: String): Boolean {
     return emailPattern.matches(email) && password.length >= 6
 }
 
-fun login(auth: FirebaseAuth, email: String, password: String, onError: (String) -> Unit) {
+fun login(auth: FirebaseAuth, email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
     auth.signInWithEmailAndPassword(email, password)
         .addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                // Login successful
+                onSuccess()
             } else {
                 onError(task.exception?.message ?: "Login failed")
             }
         }
 }
 
-fun register(auth: FirebaseAuth, email: String, password: String, onError: (String) -> Unit) {
+fun register(auth: FirebaseAuth, email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
     auth.createUserWithEmailAndPassword(email, password)
         .addOnCompleteListener { task ->
             if (task.isSuccessful) {
@@ -150,6 +210,7 @@ fun register(auth: FirebaseAuth, email: String, password: String, onError: (Stri
                 user?.let {
                     saveUserToDatabase(it)
                 }
+                onSuccess()
             } else {
                 onError(task.exception?.message ?: "Registration failed")
             }
@@ -176,7 +237,10 @@ fun saveUserToDatabase(user: FirebaseUser) {
         }
 }
 
-fun logout(auth: FirebaseAuth) {
+fun logout(auth: FirebaseAuth, navController: NavController) {
     auth.signOut()
-    // Navigate back to login screen or update UI
+    // Clear any saved user data here if necessary
+    navController.navigate("login") {
+        popUpTo("login") { inclusive = true }
+    }
 }

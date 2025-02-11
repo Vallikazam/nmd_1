@@ -30,8 +30,6 @@ class MainActivity : ComponentActivity() {
         FirebaseApp.initializeApp(this)
         setContent {
             EducationalPlatformTheme {
-
-
                 val navController = rememberNavController()
                 MainScreen(navController)
             }
@@ -54,7 +52,8 @@ fun MainScreen(navController: NavHostController) {
 
 @Composable
 fun NavigationGraph(navController: NavHostController) {
-    NavHost(navController, startDestination = "home") {
+    NavHost(navController, startDestination = "login") {
+        composable("login") { ProfileScreen(navController) }
         composable("home") { HomeScreen(navController) }
         composable("forum") { ForumScreen(navController) }
         composable("profile") { ProfileScreen(navController) }
