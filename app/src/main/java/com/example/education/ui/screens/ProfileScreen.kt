@@ -1,5 +1,6 @@
 package com.example.education.ui.screens
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -7,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -162,13 +165,40 @@ fun RegisterScreen(auth: FirebaseAuth, onLoginClick: () -> Unit) {
 
 @Composable
 fun UserProfileScreen(auth: FirebaseAuth, user: FirebaseUser, navController: NavController) {
+    var isDarkTheme by remember { mutableStateOf(false) } // State for theme
+    val context = LocalContext.current
+
+    // Load the saved theme preference
+    val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+    isDarkTheme = sharedPreferences.getBoolean("dark_theme", false)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
+        // Theme Toggle Switch
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 25.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End
+        ) {
+            Text("Dark Theme")
+            Switch(
+                checked = isDarkTheme,
+                onCheckedChange = {
+                    isDarkTheme = it
+                    // Save the theme preference
+                    sharedPreferences.edit().putBoolean("dark_theme", it).apply()
+                }
+            )
+        }
+
+        // Other UI elements
         Image(
             painter = painterResource(id = R.drawable.profile_placeholder),
             contentDescription = "Profile Picture",
@@ -185,7 +215,11 @@ fun UserProfileScreen(auth: FirebaseAuth, user: FirebaseUser, navController: Nav
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
-                logout(auth, navController)
+                // Logout logic
+                auth.signOut()
+                navController.navigate("auth") {
+                    popUpTo("auth") { inclusive = true }
+                }
             },
             colors = ButtonDefaults.buttonColors(Color.Red)
         ) {

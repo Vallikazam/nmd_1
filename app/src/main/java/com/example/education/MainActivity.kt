@@ -1,5 +1,6 @@
 package com.example.education
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,12 +28,20 @@ import com.example.education.ui.screens.LoginRegisterNavigation
 import com.example.education.ui.screens.WelcomeScreen
 import com.example.education.ui.screens.HomeScreen
 import com.google.firebase.auth.FirebaseAuth
+import com.example.education.ui.theme.EducationalPlatformTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Load the saved theme preference
+        val sharedPreferences = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        val isDarkTheme = sharedPreferences.getBoolean("dark_theme", false)
+
         setContent {
-            MyApp()
+            EducationalPlatformTheme(darkTheme = isDarkTheme) {
+                MyApp()
+            }
         }
     }
 }
