@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material.icons.Icons
@@ -21,13 +20,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.education.ui.screens.*
 import com.example.education.ui.theme.EducationalPlatformTheme
-import com.google.firebase.FirebaseApp
+
+// ✅ Глобальная переменная для хранения ответов (добавлено здесь)
+val answersMap = mutableStateMapOf<String, MutableList<String>>() // ✅ Глобальное хранилище ответов
+val questionsList = mutableStateListOf<String>() // ✅ Глобальное хранилище вопросов
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        FirebaseApp.initializeApp(this)
         setContent {
             EducationalPlatformTheme {
                 val navController = rememberNavController()
@@ -52,14 +53,17 @@ fun MainScreen(navController: NavHostController) {
 
 @Composable
 fun NavigationGraph(navController: NavHostController) {
-    NavHost(navController, startDestination = "login") {
-        composable("login") { ProfileScreen(navController) }
+    NavHost(navController, startDestination = "home") {
         composable("home") { HomeScreen(navController) }
         composable("forum") { ForumScreen(navController) }
         composable("profile") { ProfileScreen(navController) }
         composable("profession/{professionId}") { backStackEntry ->
             val professionId = backStackEntry.arguments?.getString("professionId") ?: ""
             ProfessionScreen(navController, professionId)
+        }
+        composable("answers/{question}") { backStackEntry ->
+            val question = backStackEntry.arguments?.getString("question")
+            AnswersScreen(navController, question)
         }
     }
 }
