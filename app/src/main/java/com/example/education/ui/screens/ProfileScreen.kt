@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,6 +63,9 @@ fun LoginScreen(auth: FirebaseAuth, onRegisterClick: () -> Unit, navController: 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Text("Login", style = MaterialTheme.typography.headlineMedium, color = Color.Black)
+        Spacer(modifier = Modifier.height(16.dp))
+
         TextField(
             value = email,
             onValueChange = { email = it },
@@ -113,6 +118,9 @@ fun RegisterScreen(auth: FirebaseAuth, onLoginClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Text("Register", style = MaterialTheme.typography.headlineMedium, color = Color.Black)
+        Spacer(modifier = Modifier.height(16.dp))
+
         TextField(
             value = email,
             onValueChange = { email = it },
@@ -238,9 +246,52 @@ fun saveUserToDatabase(user: FirebaseUser) {
 }
 
 fun logout(auth: FirebaseAuth, navController: NavController) {
-    auth.signOut()
     // Clear any saved user data here if necessary
-    navController.navigate("login") {
-        popUpTo("login") { inclusive = true }
+    // For example, if you are using SharedPreferences, clear them here
+    navController.navigate("auth") {
+        popUpTo("auth") { inclusive = true }
+    }
+}
+
+@Composable
+fun WelcomeScreen(navController: NavController, auth: FirebaseAuth) {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.choice),
+            contentDescription = "Background Image",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Welcome, User!", style = MaterialTheme.typography.bodyLarge, color = Color.White)
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = { navController.navigate("home") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Go to Home Page")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = {
+                    auth.signOut()
+                    navController.navigate("auth") {
+                        popUpTo("auth") { inclusive = true }
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(Color.Red),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Logout", color = Color.White)
+            }
+        }
     }
 }
